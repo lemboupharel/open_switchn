@@ -1,0 +1,11 @@
+{
+  "from": "MOCK-PAYER",
+  "to": "MOCK-RECIPIENT",
+  "amount": 1000,
+  "from_carrier": "MTN Cameroon",
+  "to_carrier": "Orange",
+  "payment_method": "ussd_pay",
+  "inputted_receiver_name": "TEST RECIPIENT",
+  "lang": "en",
+  "transaction_reference": "offline-demo"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "switchn-local-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Unofficial, local-first Switchn API research client",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "cli": "tsx src/cli.ts",
+    "web": "tsx src/cli.ts web"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.8.0",
+    "commander": "^14.0.0",
+    "decimal.js": "^10.6.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

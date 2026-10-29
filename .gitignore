@@ -1,0 +1,55 @@
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+.nyc_output/
+.cache/
+*.tsbuildinfo
+
+# Private configuration and authentication/payment state
+.env
+.env.*
+!.env.example
+.state/
+.private/
+*.secret.json
+session.json
+session-health.json
+login-challenge.json
+otp-challenge.json
+auth.lock
+*.attempted
+# A custom SWITCHN_DATA_DIR inside the repo creates these directories.
+live/
+mock/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Logs, traffic captures and supplied/decompiled application artifacts
+*.log
+*.har
+*.saz
+*.pcap
+*.pcapng
+*.apk
+*.xapk
+*.aab
+*.dex
+*.zip
+*.tar.gz
+/switchn-analysis/
+/apktool-*/
+/jadx/
+
+# Machine-local editor and operating-system files
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

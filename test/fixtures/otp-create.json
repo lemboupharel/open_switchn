@@ -1,0 +1,6 @@
+{
+  "token": "synthetic-not-valid-in-production",
+  "phone_number": "MOCK-PAYER",
+  "device_lang": "en",
+  "transport": "sms"
+}

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="local-csrf" content="CSRF_PLACEHOLDER">
+  <title>Switchn Local Lab</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><span class="eyebrow">UNOFFICIAL · LOCAL ONLY</span><h1>Send mobile money</h1>
+    <p>Enter the numbers and amount. Review the fees. Then choose whether to request payment.</p>
+    <div id="session" role="status">Loading session...</div>
+    <details id="setup">
+      <summary>Why am I not getting a phone approval prompt?</summary>
+      <p><strong>This client uses the live backend only.</strong> Opening this page does not sign you in to Switchn or send a message.</p>
+      <p>Use Sign in below: an identity token is obtained from Firebase, you verify your phone through Switchn, and the server exchanges it for a bearer session. A successful challenge request does not by itself prove SMS/WhatsApp delivery. Never share a token, code or PIN in chat.</p>
+      <p>Phone sign-in requires the authorized Switchn Firebase project's client API key in <code>SWITCHN_FIREBASE_API_KEY</code> on the Node server. Android-only restrictions or a Google SMS fallback require the official app; this client never bypasses them.</p>
+      <p>If you already have an authorized API token, you can import it privately in your terminal:</p>
+      <pre>npm run cli -- auth import</pre>
+      <p>The server loads the private project <code>.env</code> automatically. Start with payments disabled:</p>
+      <pre>npm run web</pre>
+      <p>Enable <code>SWITCHN_ALLOW_PAYMENTS=true</code> only when you intend to submit a reviewed payment yourself, then restart the server.</p>
+      <p>These settings do not guarantee that the backend accepts the session or sends an operator prompt. No live payment has been verified with this client. Use the official app for a reliable real transfer.</p>
+    </details>
+  </header>
+  <main>
+    <div id="error" class="wide" role="alert"></div>
+    <section class="wide" id="authentication">
+      <h2>0. Sign in before sending</h2>
+      <p id="auth-message" role="status">Checking local sign-in state...</p>
+      <form id="signin">
+        <div class="grid">
+          <label>Your account phone<input name="phone" type="tel" autocomplete="off" required placeholder="Your own Switchn account number"></label>
+          <label>Receive verification code by<select name="transport"><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option></select></label>
+        </div>
+        <button id="signin-start">Request real sign-in code</button>
+        <button type="button" id="signin-options">Show available sign-in options</button>
+      </form>
+      <form id="verify" hidden>
+        <label>Verification code<input name="code" type="password" autocomplete="one-time-code" maxlength="32" required></label>
+        <button>Verify and sign in</button>
+      </form>
+      <div class="actions">
+        <button id="validate-session">Check existing session</button>
+        <button id="cancel-signin">Cancel local sign-in</button>
+        <button id="logout">Sign out locally</button>
+      </div>
+      <p>Sign-in sends a real verification request, never a payment. Enter only the code received for this local sign-in. A code from a separate phone-app sign-in is not interchangeable.</p>
+    </section>
+    <section class="wide">
+      <h2>1. Who are you sending to?</h2>
+      <form id="transfer">
+        <div class="grid">
+          <label>Your network<select name="from_carrier"><option value="MTN Cameroon">MTN MoMo</option><option value="Orange">Orange Money</option><option value="wallet:funds">Internal wallet</option></select></label>
+          <label>Your phone number<input name="from" type="tel" autocomplete="off" placeholder="Your authorized payer number" required></label>
+          <label>Recipient's network<select name="to_carrier" required><option value="">Choose the recipient's network</option><option value="MTN Cameroon">MTN MoMo</option><option value="Orange">Orange Money</option></select></label>
+          <label>Recipient's phone number<input name="to" type="tel" autocomplete="off" placeholder="Recipient number" required></label>
+          <label>Recipient's registered Mobile Money name<input name="inputted_receiver_name" maxlength="256" autocomplete="off" aria-describedby="receiver-name-help" placeholder="Exact name registered on the recipient's account"></label>
+          <label>Amount (whole units)<input name="amount" type="number" min="1" step="1" required placeholder="Enter the amount"></label>
+        </div>
+        <p id="receiver-name-help">Use the exact registered account name supplied by the recipient, not a nickname. Required for cross-network and wallet-funded transfers.</p>
+        <p>Choose the recipient's actual network; it is not guessed from the phone number. Confirm currency and units against your official account.</p>
+        <p id="funding-message" role="status"></p>
+        <details>
+          <summary>Payment method and optional details</summary>
+          <label>Payment method<select name="payment_method"><option value="ussd_pay">Operator / USSD approval</option><option value="web_pay">Payment webpage</option><option value="merchant_pay">Merchant payment</option></select></label>
+          <label>Reference<input name="transaction_reference" maxlength="256"></label>
+          <button type="button" id="build">Technical payload preview</button>
+        </details>
+        <div class="actions"><button type="submit" id="review" disabled>Review amount and fees</button></div>
+      </form>
+    </section>
+    <section>
+      <h2>2. Review and confirm</h2>
+      <p id="payment-permission" role="status"></p>
+      <p id="quote-message" role="status">Your quote will appear here. Nothing has been submitted.</p>
+      <dl id="quote-fields"></dl>
+      <div id="quote-alerts"></div>
+      <form id="submission">
+        <label class="checkbox"><input id="accepted" type="checkbox" required disabled>I checked the numbers, amount and fees shown above.</label>
+        <details>
+          <summary>Optional app transaction PIN</summary>
+          <p>Only if required by the official flow. Do not enter your operator/SIM PIN here. Approve on your own phone.</p>
+          <label>App transaction PIN (not saved)<input name="pin" type="password" autocomplete="off"></label>
+        </details>
+        <button type="submit" id="send" disabled>Send payment request</button>
+      </form>
+      <div id="navigation"></div>
+    </section>
+    <section>
+      <h2>3. Follow the payment</h2>
+      <p id="payment-message" role="status">No payment request yet. A real prompt can only come from the provider after an accepted live request.</p>
+      <form id="status"><label>Payment-request ID (filled in when available)<input name="id" inputmode="numeric" pattern="[1-9][0-9]*" required></label><button>Check payment status</button></form>
+      <label class="checkbox"><input id="auto-watch" type="checkbox" checked>Check status after I submit (at most 12 checks, 5 seconds apart)</label>
+      <div class="actions"><button id="watch">Watch status</button><button id="stop-watch" disabled>Stop watching</button></div>
+      <p>Keep this page open while you personally approve on your phone. A request or USSD approval alone does not prove that the transfer completed. Never retry an uncertain payment blindly.</p>
+    </section>
+    <details class="wide advanced" id="advanced">
+      <summary>Advanced: airtime, bundles and technical details</summary>
+      <div class="advanced-grid">
+    <section>
+      <h2>Fees &amp; provider catalogs</h2>
+      <form id="fees"><div class="grid"><label>Provider<select name="provider"><option value="mtn_mobile_money">MTN MoMo</option><option value="orange_money">Orange Money</option></select></label><label>Amount<input name="amount" type="number" min="1" step="1" value="1000" required></label></div><button>Estimate withdrawal fee</button></form>
+      <div class="actions"><button id="catalog">Imported catalog</button><button id="promotions">Remote promotions</button><button id="availability">Service status</button></div>
+      <p>Estimates and static catalogs are not final prices; obtain a fresh backend review.</p>
+    </section>
+    <section>
+      <h2>Airtime / data</h2>
+      <form id="airtime"><label>Airtime JSON (no PIN here)<textarea name="body" rows="8" spellcheck="false" required placeholder="Enter your validated airtime request JSON"></textarea></label><button>Prepare airtime purchase</button></form>
+      <form id="bundle"><div class="grid"><label>Promotion code<input name="promotion" required placeholder="Code from authorized catalog"></label><label>Recipient phone<input name="phone" required></label></div><button>Prepare bundle activation</button></form>
+    </section>
+    <section class="wide">
+      <div class="row"><h2>Payloads &amp; responses</h2><button id="history">Local ticket history</button><button id="diagnostics">Request/response diagnostics</button></div>
+      <p>Enable <code>SWITCHN_DEBUG=true</code> on the server for the last 50 sanitized request/response traces. Tokens, codes, PINs, phone numbers and signed URLs are masked. No trace file is saved automatically.</p>
+      <pre id="output" aria-live="polite">No requests yet. Network actions contact the live backend.</pre>
+      <p>Bearer tokens stay on the Node server. Sensitive response fields are redacted; no browser storage or third-party assets are used.</p>
+    </section>
+      </div>
+    </details>
+  </main>
+  <footer>Independent research client, not affiliated with Switchn. Successful sign-in or preflight does not prove payment; live payment completion has not been verified.</footer>
+</body>
+</html>
